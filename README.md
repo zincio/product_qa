@@ -33,7 +33,7 @@ pip install openai faiss-cpu langchain
 
 Example result
 --------------
-```bash
+```
 $ ./product-qa B01EOY7LTA
 Categories ['Hand Tools', 'Screwdrivers & Nut Drivers', 'Tools & Home Improvement', 'Screwdrivers']
 Durability
@@ -57,7 +57,7 @@ Performance
 You would buy this product because it offers 2 Phillips and 2 slotted choices, is well made and has a rotating cap for optimum and precise control. It is also made of the highest quality tempered steel, carefully heat-treated for maximum strength, and precision milled to fit screw openings securely. It also has Klein's exclusive Cushion-Grip handles for outstanding comfort and control.
 ```
 
-```bash
+```
 $ ./product-qa B095BZT4SD --question "can it be used as a stand?"
 Yes, the Samsung Tab A7 Lite Case has flip capability to transform the case into a viewing stand and keyboard stand.
 ```

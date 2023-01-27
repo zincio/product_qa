@@ -1,0 +1,164 @@
+#!/usr/bin/env python
+from typing import List
+import argparse
+import dataclasses
+import json
+import os
+import re
+import requests
+from pprint import pprint
+from langchain.embeddings.openai import OpenAIEmbeddings
+from langchain.text_splitter import CharacterTextSplitter
+from langchain.vectorstores.faiss import FAISS
+from langchain.docstore.document import Document
+from langchain.prompts import PromptTemplate
+from langchain.chains.question_answering import load_qa_chain #, load_qa_with_sources_chain
+from langchain.llms import OpenAI
+
+assert os.getenv('OPENAI_API_KEY'), "Must supply OPENAI_API_KEY"
+
+@dataclasses.dataclass
+class Product:
+    asin: str
+    json: dict
+    title: str
+    segments: List[str]
+    categories: List[str]
+
+def load_data(asin, retailer='amazon'):
+    try:
+        fp = './data/{}.json'.format(asin)
+        with open(fp) as inp:
+            js = json.load(inp)
+    except Exception:
+        js = ziggurat_details(asin, retailer=retailer)
+    return parse_data(js)
+
+def ziggurat_details(asin, retailer='amazon'):
+    ct = os.getenv('ZINC_CT')
+    assert ct, "Must supply ZINC_CT"
+    resp = requests.get(
+        'https://api.zinc.io/v1/products/{}'.format(asin),
+        auth=(ct, ''),
+        params={
+            'retailer': retailer,
+            'max_age': 3600,
+            'timeout': 90,
+        },
+        timeout=91,
+    )
+    resp.raise_for_status()
+    return resp.json()
+
+def parse_data(js):
+    asin = js['product_id']
+    doc = []
+    doc.append( js['title'] )
+    if js.get('price'):
+        doc.append( 'Price is ${0:.2f}'.format( js['price'] / 100.0 ) )
+    if 'product_details' in js:
+        doc.extend( js['product_details'] )
+    if 'feature_bullets' in js:
+        doc.extend( js['feature_bullets'] )
+    if 'product_description' in js:
+        doc.append( js['product_description'] )
+    if 'reviews' in js:
+        doc.extend( [ (r['title'] + '\n' + r['content']) for r in js['reviews'] ] )
+    cats = [ s['key'] for s in js['sales_ranks'] ] + js['categories'][-3:]
+    cats = list(set(cats))
+    return Product(
+        asin=asin,
+        json=js,
+        title=js['title'],
+        segments=doc,
+        categories=cats,
+    )
+
+def flatten(l):
+    return [e for s in l for e in s]
+
+def get_important_attributes(prod):
+    categories = prod.categories
+    print("Categories", categories)
+    prompt = "What are the six most important attributes that people compare for {}? Respond without explanations.".format(
+        ' and '.join(categories),
+    )
+
+    oai = OpenAI(temperature=0.1)
+    gens = oai.generate([prompt])
+    result = gens.generations[0][0].text
+
+    attributes = [ re.sub(r'[0-9]+[\.\)]\s*', '', t.strip().lstrip('-').strip()) for t in result.strip().split('\n') ]
+    attributes = [ t.strip() for t in attributes if t.strip() ]
+
+    return attributes
+
+def ask_question(prod, query, faiss=False, temperature=0):
+    # split the doc into chunks
+    text_splitter = CharacterTextSplitter(chunk_size=1000, chunk_overlap=20)
+    texts = [ text_splitter.split_text(t) for t in prod.segments ]
+    texts = flatten(texts)
+    texts = [t.replace('\u200e', '').replace('\u2019', "'").replace("\u2026", "-").replace("\u2014", "-") for t in texts]
+
+    if faiss:
+        embeddings = OpenAIEmbeddings()
+        docsearch = FAISS.from_texts(texts, embeddings)
+        docs = docsearch.similarity_search(query, k=6)
+    else:
+        docs = [Document(page_content=t) for t in texts]
+
+    model = 'text-davinci-003'
+    #model = 'text-curie-001'  # this one is kinda dumb
+
+    prompt = '''Use only the following pieces of context to answer the question at the end. If you don't know the answer, just say exactly "Don't Know", don't try to make up an answer.\n\n{context}\n\nQuestion: {question}\nHelpful Answer:'''
+    prompt = PromptTemplate(template=prompt, input_variables=["context", "question"], template_format='f-string')
+
+    chain = load_qa_chain(OpenAI(temperature=temperature, model_name=model), chain_type="stuff", prompt=prompt)
+
+    out = chain({"input_documents": docs, "question": query}, return_only_outputs=True)
+    return out['output_text'].strip()
+
+def main_summarize(args):
+    prods = [
+        load_data(asin, retailer=args.retailer)
+        for asin in args.asin
+    ]
+
+    for prod in prods:
+        #print("Product ASIN", prod.asin, ":", prod.title)
+        ctr = 0
+        for attrib in get_important_attributes(prod):
+            res = ask_question(prod, "What is the {} of this product?".format(attrib))
+            if re.sub(r'[^a-z]', '', res.lower()) != 'dontknow':
+                ctr += 1
+                print(attrib, "\n\t", res, "\n")
+            if ctr > 5:
+                break
+        print(ask_question(prod, "Why would I buy this product?"))
+
+def main_question(args):
+    prods = [
+        load_data(asin, retailer=args.retailer)
+        for asin in args.asin
+    ]
+
+    for prod in prods:
+        #print("Product ASIN", prod.asin, ":", prod.title)
+        print(ask_question(prod, args.question, temperature=0))
+
+def main():
+    # Parse arguments
+    parser = argparse.ArgumentParser(description='Query Ziggurat and use OpenAI to summarize products')
+
+    parser.add_argument('--retailer', default='amazon', help="Which retailer to query? default: Amazon")
+    parser.add_argument('--question', help="What question to ask?")
+    parser.add_argument('asin', nargs='+', help="Which product(s) to query?")
+
+    args = parser.parse_args()
+    if args.question:
+        main_question(args)
+    else:
+        main_summarize(args)
+
+if __name__ == '__main__':
+    main()

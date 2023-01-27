@@ -34,27 +34,27 @@ pip install openai faiss-cpu langchain
 Example result
 --------------
 ```
-$ ./product-qa B01EOY7LTA
-Categories ['Hand Tools', 'Screwdrivers & Nut Drivers', 'Tools & Home Improvement', 'Screwdrivers']
-Durability
-         Klein Tools electronics screwdrivers are designed for precision work, and feature a swivel cap for optimum control. Made of the highest quality tempered steel, carefully heat-treated for maximum strength, and precision milled to fit screw openings securely. Rotating caps and Klein's exclusive Cushion-Grip handles offer outstanding comfort and control. Corrosion-resistant chrome plated barrel that includes two double-ended bits that exceed ANSI standards.
+$ ./product-qa B095BZT4SD                                                                                ret:0 
+Categories ['Tablet Accessories', 'Tablet Cases', 'Bags, Cases & Sleeves', 'Cases']
+Durability 
+	 Great durability, sturdiness and easy to hold. 
 
-Quality
-         Great! Can't beat Klein!
+Protection 
+	 Durable protective hardback with premium quality PU leather. Soft scratch-free microfiber interior adds comfort and an additional layer of protection. 
 
-Price
-         $10.97
+Style 
+	 Case 
 
-Ergonomics
-         Cushion-Grip handles for maximum comfort when working on small equipment.
+Price 
+	 $11.99 
 
-Versatility
-         This product is versatile as it offers 2 Phillips and 2 slotted choices, which are great for small appliances and electronics, and it has interchangeable shaft for quick bit switch out. It is also corrosion-resistant and has a rotating cap for optimum and precise control.
+Compatibility 
+	 This case is compatible with Samsung Galaxy Tab A7 Lite 8.7 inch Model (SM-T220/T225/T227) 2021 Release. It will NOT work for any other model device. 
 
-Performance
-         This product is designed for precision work and features a swivel cap for optimum control. It is made of the highest quality tempered steel, carefully heat-treated for maximum strength, and precision milled to fit screw openings securely. Rotating caps and Klein's exclusive Cushion-Grip handles offer outstanding comfort and control. Corrosion-resistant chrome plated barrel that includes two double-ended bits that exceed ANSI standards.
+Quality 
+	 Reviews indicate that this product is of good quality, providing protection for the Samsung tablet and is lightweight and not bulky. 
 
-You would buy this product because it offers 2 Phillips and 2 slotted choices, is well made and has a rotating cap for optimum and precise control. It is also made of the highest quality tempered steel, carefully heat-treated for maximum strength, and precision milled to fit screw openings securely. It also has Klein's exclusive Cushion-Grip handles for outstanding comfort and control.
+You would buy this product because it is a slim and lightweight hard back design that adds minimal bulk while offering your device great protection. It has a trifold stand, durable protective hardback with premium quality PU leather, soft scratch-free microfiber interior, precise cutouts for easy access to all the controls and features, and is compatible with the Samsung Galaxy Tab A7 Lite 8.7 inch Model (SM-T220/T225/T227) 2021 Release.
 ```
 
 ```
